@@ -234,12 +234,26 @@
   // Tạo session_id ngẫu nhiên mỗi lần mở tab
   // Mỗi tab = 1 cuộc hội thoại riêng, agent nhớ context trong tab đó
   const SESSION_ID = 'session-' + Math.random().toString(36).substr(2, 9);
-  const TENANT_SLUG = 'salon-mai';
+  // Slug lấy từ URL /chat/{slug}, không hardcode
+  const TENANT_SLUG = window.location.pathname.split('/').filter(Boolean).pop();
   const API_URL = '/api/v1/chat/';
 
-  // Hiển thị tin nhắn chào khi load trang
-  window.onload = () => {
-    addBubble('agent', 'Xin chào! Mình là Mai, trợ lý đặt lịch của Salon Mai 💇\n\nMình có thể giúp bạn xem dịch vụ, kiểm tra lịch trống và đặt lịch hẹn. Bạn cần gì ạ?');
+  // Hiển thị tin nhắn chào khi load trang — lấy tên tiệm/persona thật từ tenant API
+  window.onload = async () => {
+    let shopName = 'tiệm';
+    let personaName = 'Trợ lý AI';
+    try {
+      const res = await fetch(`/api/v1/tenants/${TENANT_SLUG}`);
+      if (res.ok) {
+        const tenant = await res.json();
+        shopName = tenant.name;
+        personaName = tenant.persona_name;
+        document.title = `${shopName} — Đặt lịch AI`;
+      }
+    } catch (err) {
+      // giữ giá trị mặc định nếu không lấy được tenant
+    }
+    addBubble('agent', `Xin chào! Mình là ${personaName}, trợ lý đặt lịch của ${shopName} 💇\n\nMình có thể giúp bạn xem dịch vụ, kiểm tra lịch trống và đặt lịch hẹn. Bạn cần gì ạ?`);
   };
 
   function addBubble(role, text) {
