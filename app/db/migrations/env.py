@@ -27,7 +27,10 @@ def get_sync_url() -> str:
     Đổi asyncpg → psycopg2 vì Alembic cần sync driver.
     """
     url = os.environ.get("DATABASE_URL", "")
-
+  print(f"DEBUG DATABASE_URL = {url[:50] if url != 'NOT_SET' else 'NOT_SET'}")
+    
+    if url == "NOT_SET" or not url:
+        raise ValueError("DATABASE_URL not set")
     if not url:
         raise ValueError(
             "DATABASE_URL environment variable is not set. "
