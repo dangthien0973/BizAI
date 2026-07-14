@@ -2,4 +2,4 @@
 .venv/
 __pycache__/
 *.pyc
-postgres_data/
+postgres_data/git add app/db/migrations/env.py
