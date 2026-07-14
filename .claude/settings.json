@@ -3,7 +3,9 @@
     "allow": [
       "Bash(.venv/Scripts/python -c ' *)",
       "Bash(.venv/Scripts/python -c \"import app.main; print\\('OK'\\)\")",
-      "Bash(git --version)"
+      "Bash(git --version)",
+      "Bash(python -c \"print\\('placeholder'\\)\")",
+      "Bash(python -c ' *)"
     ]
   }
 }
