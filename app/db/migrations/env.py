@@ -18,7 +18,11 @@ config = context.config
 
 # Alembic runs migrations synchronously, so swap the asyncpg driver
 # (used by the app at runtime) for psycopg2 here.
-sync_url = get_settings().database_url.replace("+asyncpg", "+psycopg2")
+import os
+raw_url = os.environ.get("DATABASE_URL", get_settings().database_url)
+sync_url = raw_url.replace("+asyncpg", "").replace("postgresql://", "postgresql+psycopg2://")
+if "+psycopg2" not in sync_url:
+    sync_url = sync_url.replace("postgresql://", "postgresql+psycopg2://")
 config.set_main_option("sqlalchemy.url", sync_url)
 
 # Interpret the config file for Python logging.
