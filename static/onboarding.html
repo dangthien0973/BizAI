@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BizAgent — Tạo trợ lý AI cho tiệm của bạn</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+
+    /* Header */
+    .card-header {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 28px 32px;
+    }
+
+    .card-header h1 { font-size: 22px; font-weight: 700; }
+    .card-header p { font-size: 14px; opacity: 0.85; margin-top: 6px; }
+
+    /* Progress bar */
+    .progress-bar {
+      display: flex;
+      gap: 0;
+      margin-top: 20px;
+    }
+
+    .progress-step {
+      flex: 1;
+      height: 4px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 2px;
+      margin-right: 6px;
+      transition: background 0.3s;
+    }
+
+    .progress-step.active { background: white; }
+
+    .step-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+
+    .step-label {
+      font-size: 11px;
+      opacity: 0.7;
+      transition: opacity 0.3s;
+    }
+
+    .step-label.active { opacity: 1; font-weight: 600; }
+
+    /* Body */
+    .card-body { padding: 32px; }
+
+    .step { display: none; }
+    .step.active { display: block; }
+
+    .step h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 6px;
+    }
+
+    .step p {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    /* Form elements */
+    .form-group { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="time"],
+    textarea {
+      width: 100%;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      color: #1a1a1a;
+    }
+
+    input:focus, textarea:focus { border-color: #667eea; }
+
+    /* Services */
+    .service-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .service-item {
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 14px;
+      position: relative;
+    }
+
+    .service-row {
+      display: grid;
+      grid-template-columns: 1fr 100px 80px;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .service-row label { font-size: 11px; color: #888; margin-bottom: 4px; }
+
+    .remove-btn {
+      position: absolute;
+      top: 8px; right: 10px;
+      background: none;
+      border: none;
+      color: #ccc;
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+      width: auto;
+      height: auto;
+      border-radius: 0;
+    }
+
+    .remove-btn:hover { color: #ff4d4d; }
+
+    .add-btn {
+      width: 100%;
+      background: #f5f5f5;
+      border: 1.5px dashed #ccc;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      margin-top: 8px;
+      height: auto;
+      border-radius: 10px;
+      transition: all 0.2s;
+    }
+
+    .add-btn:hover { background: #eeebff; border-color: #667eea; color: #667eea; }
+
+    /* Operating hours */
+    .hours-grid { display: flex; flex-direction: column; gap: 8px; }
+
+    .hours-row {
+      display: grid;
+      grid-template-columns: 80px 1fr 1fr 80px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .day-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .closed-label {
+      font-size: 12px;
+      color: #999;
+      text-align: center;
+      grid-column: 2 / 4;
+    }
+
+    /* Toggle switch */
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .toggle {
+      position: relative;
+      width: 36px;
+      height: 20px;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #ccc;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .toggle-slider:before {
+      content: '';
+      position: absolute;
+      width: 14px; height: 14px;
+      left: 3px; bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+
+    input:checked + .toggle-slider { background: #667eea; }
+    input:checked + .toggle-slider:before { transform: translateX(16px); }
+
+    .toggle-text { font-size: 11px; color: #999; }
+
+    /* Footer buttons */
+    .card-footer {
+      padding: 0 32px 32px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-back {
+      flex: 1;
+      background: #f5f5f5;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #666;
+      cursor: pointer;
+      transition: background 0.2s;
+      height: auto;
+      width: auto;
+    }
+
+    .btn-back:hover { background: #eee; }
+
+    .btn-next {
+      flex: 2;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      height: auto;
+      width: auto;
+    }
+
+    .btn-next:hover { opacity: 0.9; }
+    .btn-next:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Success */
+    .success {
+      text-align: center;
+      padding: 40px 32px;
+    }
+
+    .success-icon { font-size: 56px; margin-bottom: 16px; }
+    .success h2 { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; }
+    .success p { font-size: 14px; color: #666; margin-bottom: 24px; }
+
+    .btn-goto {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 14px 32px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+
+    .btn-goto:hover { opacity: 0.9; }
+
+    .error-msg {
+      background: #fff0f0;
+      border: 1px solid #ffcccc;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #cc0000;
+      margin-bottom: 16px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <!-- Header -->
+  <div class="card-header">
+    <h1>🤖 BizAgent</h1>
+    <p>Tạo trợ lý AI đặt lịch cho tiệm của bạn trong 2 phút</p>
+    <div class="progress-bar">
+      <div class="progress-step active" id="prog-0"></div>
+      <div class="progress-step" id="prog-1"></div>
+      <div class="progress-step" id="prog-2"></div>
+    </div>
+    <div class="step-labels">
+      <span class="step-label active" id="label-0">Thông tin tiệm</span>
+      <span class="step-label" id="label-1">Dịch vụ</span>
+      <span class="step-label" id="label-2">Giờ mở cửa</span>
+    </div>
+  </div>
+
+  <!-- Step 1: Thông tin tiệm -->
+  <div class="card-body">
+    <div id="step-success" style="display:none">
+      <div class="success">
+        <div class="success-icon">🎉</div>
+        <h2 id="success-title">Tạo thành công!</h2>
+        <p id="success-msg">Trợ lý AI của bạn đã sẵn sàng phục vụ khách hàng.</p>
+        <a id="success-link" href="#" class="btn-goto">💬 Mở chat ngay →</a>
+      </div>
+    </div>
+
+    <div id="step-0" class="step active">
+      <h2>Thông tin tiệm</h2>
+      <p>Điền thông tin cơ bản để tạo trợ lý AI riêng cho tiệm bạn</p>
+
+      <div class="error-msg" id="err-0"></div>
+
+      <div class="form-group">
+        <label>Tên tiệm *</label>
+        <input type="text" id="shop_name" placeholder="VD: Nail Lan, Salon Mai...">
+      </div>
+      <div class="form-group">
+        <label>Tên trợ lý AI *</label>
+        <input type="text" id="persona_name" placeholder="VD: Linh, Mai, Bot...">
+      </div>
+    </div>
+
+    <!-- Step 2: Dịch vụ -->
+    <div id="step-1" class="step">
+      <h2>Dịch vụ của tiệm</h2>
+      <p>Thêm các dịch vụ bạn cung cấp — trợ lý AI sẽ giới thiệu với khách</p>
+
+      <div class="error-msg" id="err-1"></div>
+
+      <div class="service-list" id="serviceList"></div>
+      <button class="add-btn" onclick="addService()">+ Thêm dịch vụ</button>
+    </div>
+
+    <!-- Step 3: Giờ mở cửa -->
+    <div id="step-2" class="step">
+      <h2>Giờ mở cửa</h2>
+      <p>Cài đặt lịch làm việc — trợ lý AI chỉ đặt lịch trong khung giờ này</p>
+
+      <div class="error-msg" id="err-2"></div>
+
+      <div class="hours-grid" id="hoursGrid"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="card-footer" id="cardFooter">
+    <button class="btn-back" id="btnBack" onclick="prevStep()" style="display:none">← Quay lại</button>
+    <button class="btn-next" id="btnNext" onclick="nextStep()">Tiếp theo →</button>
+  </div>
+</div>
+
+<script>
+  const DAYS = ['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','Chủ nhật'];
+  let currentStep = 0;
+  let serviceCount = 0;
+
+  // ── Init ──────────────────────────────────────────
+  window.onload = () => {
+    addService();   // 1 dịch vụ mặc định
+    buildHoursGrid();
+  };
+
+  // ── Services ─────────────────────────────────────
+  function addService() {
+    const id = serviceCount++;
+    const list = document.getElementById('serviceList');
+    const item = document.createElement('div');
+    item.className = 'service-item';
+    item.id = `svc-${id}`;
+    item.innerHTML = `
+      <button class="remove-btn" onclick="removeService(${id})">×</button>
+      <div class="service-row">
+        <div class="form-group" style="margin:0">
+          <label>Tên dịch vụ</label>
+          <input type="text" id="svc-name-${id}" placeholder="VD: Sơn gel">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Giá (VND)</label>
+          <input type="number" id="svc-price-${id}" placeholder="100000" min="0">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Phút</label>
+          <input type="number" id="svc-duration-${id}" placeholder="60" min="15" max="480">
+        </div>
+      </div>
+    `;
+    list.appendChild(item);
+  }
+
+  function removeService(id) {
+    const items = document.querySelectorAll('.service-item');
+    if (items.length <= 1) { alert('Phải có ít nhất 1 dịch vụ'); return; }
+    document.getElementById(`svc-${id}`).remove();
+  }
+
+  function getServices() {
+    const items = document.querySelectorAll('.service-item');
+    return Array.from(items).map(item => {
+      const id = item.id.replace('svc-','');
+      return {
+        name: document.getElementById(`svc-name-${id}`)?.value.trim() || '',
+        price: parseFloat(document.getElementById(`svc-price-${id}`)?.value) || 0,
+        duration_min: parseInt(document.getElementById(`svc-duration-${id}`)?.value) || 60,
+      };
+    });
+  }
+
+  // ── Operating hours ───────────────────────────────
+  function buildHoursGrid() {
+    const grid = document.getElementById('hoursGrid');
+    DAYS.forEach((day, i) => {
+      const isSunday = i === 6;
+      const row = document.createElement('div');
+      row.className = 'hours-row';
+      row.id = `hours-row-${i}`;
+      row.innerHTML = `
+        <span class="day-label">${day}</span>
+        <input type="time" id="open-${i}" value="${isSunday ? '' : '08:00'}" ${isSunday ? 'disabled' : ''}>
+        <input type="time" id="close-${i}" value="${isSunday ? '' : '18:00'}" ${isSunday ? 'disabled' : ''}>
+        <div class="toggle-wrap">
+          <label class="toggle">
+            <input type="checkbox" id="closed-${i}" ${isSunday ? 'checked' : ''}
+              onchange="toggleDay(${i})">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-text">Nghỉ</span>
+        </div>
+      `;
+      grid.appendChild(row);
+    });
+  }
+
+  function toggleDay(i) {
+    const isClosed = document.getElementById(`closed-${i}`).checked;
+    document.getElementById(`open-${i}`).disabled = isClosed;
+    document.getElementById(`close-${i}`).disabled = isClosed;
+    if (isClosed) {
+      document.getElementById(`open-${i}`).value = '';
+      document.getElementById(`close-${i}`).value = '';
+    } else {
+      document.getElementById(`open-${i}`).value = '08:00';
+      document.getElementById(`close-${i}`).value = '18:00';
+    }
+  }
+
+  function getOperatingHours() {
+    return DAYS.map((_, i) => {
+      const isClosed = document.getElementById(`closed-${i}`).checked;
+      return {
+        day_of_week: i,
+        open_time: isClosed ? null : document.getElementById(`open-${i}`).value || null,
+        close_time: isClosed ? null : document.getElementById(`close-${i}`).value || null,
+        is_closed: isClosed,
+      };
+    });
+  }
+
+  // ── Validation ────────────────────────────────────
+  function showError(step, msg) {
+    const el = document.getElementById(`err-${step}`);
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function clearError(step) {
+    const el = document.getElementById(`err-${step}`);
+    if (el) el.style.display = 'none';
+  }
+
+  function validateStep(step) {
+    clearError(step);
+
+    if (step === 0) {
+      const name = document.getElementById('shop_name').value.trim();
+      const persona = document.getElementById('persona_name').value.trim();
+      if (!name) { showError(0, 'Vui lòng nhập tên tiệm'); return false; }
+      if (!persona) { showError(0, 'Vui lòng nhập tên trợ lý AI'); return false; }
+    }
+
+    if (step === 1) {
+      const services = getServices();
+      for (const svc of services) {
+        if (!svc.name) { showError(1, 'Vui lòng nhập tên cho tất cả dịch vụ'); return false; }
+        if (svc.price < 0) { showError(1, 'Giá không được âm'); return false; }
+        if (svc.duration_min < 15) { showError(1, 'Thời gian tối thiểu 15 phút'); return false; }
+      }
+    }
+
+    if (step === 2) {
+      const hours = getOperatingHours();
+      for (const h of hours) {
+        if (!h.is_closed && (!h.open_time || !h.close_time)) {
+          showError(2, `Vui lòng nhập giờ mở và đóng cửa cho ${DAYS[h.day_of_week]}`);
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  // ── Navigation ────────────────────────────────────
+  function updateUI() {
+    DAYS.forEach((_, i) => {
+      document.getElementById(`step-${i}`)?.classList.remove('active');
+      document.getElementById(`prog-${i}`)?.classList.remove('active');
+      document.getElementById(`label-${i}`)?.classList.remove('active');
+    });
+
+    document.getElementById(`step-${currentStep}`)?.classList.add('active');
+
+    for (let i = 0; i <= currentStep; i++) {
+      document.getElementById(`prog-${i}`)?.classList.add('active');
+    }
+
+    document.getElementById(`label-${currentStep}`)?.classList.add('active');
+    document.getElementById('btnBack').style.display = currentStep > 0 ? 'block' : 'none';
+    document.getElementById('btnNext').textContent =
+      currentStep === 2 ? '🚀 Tạo trợ lý AI' : 'Tiếp theo →';
+  }
+
+  function nextStep() {
+    if (!validateStep(currentStep)) return;
+    if (currentStep < 2) {
+      currentStep++;
+      updateUI();
+    } else {
+      submit();
+    }
+  }
+
+  function prevStep() {
+    if (currentStep > 0) {
+      currentStep--;
+      updateUI();
+    }
+  }
+
+  // ── Submit ────────────────────────────────────────
+  async function submit() {
+    const btn = document.getElementById('btnNext');
+    btn.disabled = true;
+    btn.textContent = '⏳ Đang tạo...';
+
+    const payload = {
+      shop_name: document.getElementById('shop_name').value.trim(),
+      persona_name: document.getElementById('persona_name').value.trim(),
+      services: getServices(),
+      operating_hours: getOperatingHours(),
+    };
+
+    try {
+      const res = await fetch('/api/v1/onboarding/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(2, data.detail || 'Có lỗi xảy ra, vui lòng thử lại.');
+        btn.disabled = false;
+        btn.textContent = '🚀 Tạo trợ lý AI';
+        return;
+      }
+
+      // Thành công — ẩn form, hiện success
+      document.querySelectorAll('.step').forEach(s => s.style.display = 'none');
+      document.getElementById('cardFooter').style.display = 'none';
+
+      document.getElementById('success-title').textContent = data.message;
+      document.getElementById('success-msg').textContent =
+        `Slug tiệm của bạn: ${data.tenant_slug}`;
+      document.getElementById('success-link').href = data.chat_url;
+      document.getElementById('step-success').style.display = 'block';
+
+    } catch (err) {
+      showError(2, 'Không thể kết nối server. Vui lòng thử lại.');
+      btn.disabled = false;
+      btn.textContent = '🚀 Tạo trợ lý AI';
+    }
+  }
+</script>
+
+</body>
+</html>

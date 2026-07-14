@@ -1,0 +1,48 @@
+services:             # danh sách các "máy ảo" cần chạy
+
+  postgres:           # tên tùy đặt, dùng để gọi trong compose network
+    image: postgres:16-alpine
+    # ↑ dùng image PostgreSQL phiên bản 16, alpine = nhỏ gọn hơn
+
+    container_name: bizagent_db
+    # ↑ tên container khi chạy lệnh docker exec
+
+    environment:
+      POSTGRES_DB:       bizagent      # tên database tạo sẵn
+      POSTGRES_USER:     bizagent      # username
+      POSTGRES_PASSWORD: bizagent_dev  # password (chỉ dùng local)
+
+    ports:
+      - "5432:5432"
+    # ↑ "máy thật:container" — cổng 5432 máy thật → cổng 5432 trong container
+    # FastAPI trên máy thật kết nối qua localhost:5432
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # ↑ data được lưu ra ngoài container
+    # nếu không có dòng này: tắt container là mất hết data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bizagent -d bizagent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # ↑ Docker tự kiểm tra DB đã sẵn sàng chưa trước khi cho app kết nối
+
+  pgadmin:            # giao diện web để nhìn vào DB — không bắt buộc nhưng tiện
+    image: dpage/pgadmin4:latest
+    container_name: bizagent_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@bizagent.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    # ↑ mở http://localhost:5050 trên máy thật
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # ↑ pgAdmin chỉ start sau khi postgres healthy
+
+volumes:
+  postgres_data:    # khai báo volume — Docker tự quản lý, data tồn tại kể cả khi restart
+  pgadmin_data:

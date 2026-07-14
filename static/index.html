@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BizAgent — Trợ lý AI đặt lịch cho tiệm của bạn</title>
+  <style>
+    :root {
+      --primary: #667eea;
+      --primary-dark: #764ba2;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --bg: #fff;
+      --bg-alt: #f8f9ff;
+      --border: #e8e8e8;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.6;
+    }
+
+    /* ── Navbar ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+
+    .lang-toggle {
+      background: var(--bg-alt);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 6px;
+      display: flex;
+      gap: 2px;
+      cursor: pointer;
+    }
+
+    .lang-btn {
+      padding: 3px 10px;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: 500;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+
+    .lang-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .nav-cta {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+
+    .nav-cta:hover { opacity: 0.85; }
+
+    /* ── Sections ── */
+    section { padding: 80px 24px; }
+    .container { max-width: 960px; margin: 0 auto; }
+
+    /* ── Hero ── */
+    .hero {
+      padding-top: 140px;
+      padding-bottom: 80px;
+      background: linear-gradient(160deg, #f8f9ff 0%, #fff 60%);
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: #eeebff;
+      color: var(--primary);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      letter-spacing: -0.5px;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 18px;
+      color: var(--text-muted);
+      max-width: 540px;
+      margin: 0 auto 36px;
+    }
+
+    .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.1s;
+      display: inline-block;
+    }
+
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .btn-secondary {
+      background: white;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+      border-radius: 10px;
+      padding: 14px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: inline-block;
+    }
+
+    .btn-secondary:hover { background: #f0eeff; }
+
+    .hero-note {
+      margin-top: 16px;
+      font-size: 13px;
+      color: #aaa;
+    }
+
+    /* ── Problem ── */
+    .problem { background: var(--bg-alt); }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(24px, 3.5vw, 36px);
+      font-weight: 700;
+      margin-bottom: 16px;
+      line-height: 1.25;
+    }
+
+    .section-sub {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 540px;
+      margin-bottom: 48px;
+    }
+
+    .pain-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .pain-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .pain-icon { font-size: 28px; margin-bottom: 12px; }
+    .pain-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .pain-card p { font-size: 13px; color: var(--text-muted); }
+
+    /* ── Solution ── */
+    .solution-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+
+    .solution-card {
+      border-radius: 14px;
+      padding: 28px;
+      background: linear-gradient(135deg, #f8f9ff, #fff);
+      border: 1.5px solid #e8e8ff;
+    }
+
+    .solution-card .icon {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 16px;
+    }
+
+    .solution-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .solution-card p { font-size: 13px; color: var(--text-muted); }
+
+    /* ── How it works ── */
+    .how { background: var(--bg-alt); }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 32px;
+      position: relative;
+    }
+
+    .step {
+      text-align: center;
+      padding: 0 16px;
+    }
+
+    .step-num {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0 auto 16px;
+    }
+
+    .step h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+    .step p { font-size: 13px; color: var(--text-muted); }
+
+    /* ── Demo ── */
+    .demo-box {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 20px;
+      padding: 48px;
+      text-align: center;
+      color: white;
+    }
+
+    .demo-box h2 { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+    .demo-box p { font-size: 16px; opacity: 0.85; margin-bottom: 28px; }
+
+    .btn-demo {
+      background: white;
+      color: var(--primary);
+      border: none;
+      border-radius: 10px;
+      padding: 14px 32px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: transform 0.1s;
+    }
+
+    .btn-demo:hover { transform: translateY(-2px); }
+
+    /* ── Pricing ── */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .pricing-card {
+      border-radius: 16px;
+      padding: 32px;
+      border: 2px solid var(--border);
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+
+    .pricing-card:hover { border-color: var(--primary); }
+
+    .pricing-card.featured {
+      border-color: var(--primary);
+      background: linear-gradient(160deg, #f8f9ff, #fff);
+      position: relative;
+    }
+
+    .featured-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 12px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .pricing-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+
+    .price {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 16px 0 4px;
+    }
+
+    .price span { font-size: 14px; font-weight: 400; color: var(--text-muted); }
+
+    .pricing-features {
+      list-style: none;
+      margin: 20px 0 28px;
+      text-align: left;
+    }
+
+    .pricing-features li {
+      font-size: 13px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+
+    .pricing-features li:last-child { border-bottom: none; }
+
+    .btn-plan {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 2px solid var(--primary);
+      background: none;
+      color: var(--primary);
+      transition: all 0.2s;
+      text-decoration: none;
+      display: block;
+    }
+
+    .btn-plan.featured-btn {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border-color: transparent;
+    }
+
+    .btn-plan:hover { opacity: 0.85; }
+
+    /* ── Final CTA ── */
+    .final-cta {
+      text-align: center;
+      background: var(--bg-alt);
+    }
+
+    .final-cta h2 { font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+    .final-cta p { font-size: 16px; color: var(--text-muted); margin-bottom: 32px; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 13px;
+      color: #aaa;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── i18n ── */
+    [data-en] { display: none; }
+    body.en [data-vi] { display: none; }
+    body.en [data-en] { display: block; }
+    span[data-en], a[data-en], button[data-en] {
+      display: none;
+    }
+    body.en span[data-vi], body.en a[data-vi], body.en button[data-vi] { display: none; }
+    body.en span[data-en], body.en a[data-en], body.en button[data-en] { display: inline; }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="nav">
+  <div class="nav-brand">🤖 BizAgent</div>
+  <div class="nav-right">
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="btnVi" onclick="setLang('vi')">🇻🇳 VI</button>
+      <button class="lang-btn" id="btnEn" onclick="setLang('en')">🇬🇧 EN</button>
+    </div>
+    <a href="/onboarding" class="nav-cta">
+      <span data-vi>Dùng miễn phí</span>
+      <span data-en>Get started free</span>
+    </a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">
+      <span data-vi>✨ Powered by Azure AI Foundry</span>
+      <span data-en>✨ Powered by Azure AI Foundry</span>
+    </div>
+    <h1 data-vi>Trợ lý AI đặt lịch<br><span>tự động 24/7</span><br>cho tiệm của bạn</h1>
+    <h1 data-en>AI booking agent<br><span>24/7 automated</span><br>for your business</h1>
+    <p data-vi>Khách đặt lịch qua chat — không cần gọi điện, không cần nhân viên trực. Bạn chỉ cần mở cửa tiệm.</p>
+    <p data-en>Customers book via chat — no phone calls, no staff needed. You just open the door.</p>
+    <div class="hero-btns">
+      <a href="/onboarding" class="btn-primary">
+        <span data-vi>🚀 Tạo trợ lý AI miễn phí</span>
+        <span data-en>🚀 Create your AI agent free</span>
+      </a>
+      <a href="/chat/salon-mai" class="btn-secondary" target="_blank">
+        <span data-vi>💬 Xem demo</span>
+        <span data-en>💬 See demo</span>
+      </a>
+    </div>
+    <p class="hero-note">
+      <span data-vi>✓ Miễn phí 30 ngày &nbsp;·&nbsp; ✓ Không cần thẻ tín dụng &nbsp;·&nbsp; ✓ Setup 2 phút</span>
+      <span data-en>✓ Free 30 days &nbsp;·&nbsp; ✓ No credit card &nbsp;·&nbsp; ✓ 2 minute setup</span>
+    </p>
+  </div>
+</section>
+
+<!-- Problem -->
+<section class="problem">
+  <div class="container">
+    <div class="section-label">
+      <span data-vi>Vấn đề</span><span data-en>The Problem</span>
+    </div>
+    <h2 class="section-title" data-vi>Bạn đang mất khách vì những lý do này</h2>
+    <h2 class="section-title" data-en>You're losing customers because of this</h2>
+    <p class="section-sub" data-vi>Chủ tiệm nail/salon đang lãng phí hàng giờ mỗi ngày chỉ để nhận lịch qua điện thoại.</p>
+    <p class="section-sub" data-en>Nail/salon owners waste hours every day just taking bookings over the phone.</p>
+    <div class="pain-grid">
+      <div class="pain-card">
+        <div class="pain-icon">📵</div>
+        <h3 data-vi>Đang làm không bắt máy được</h3>
+        <h3 data-en>Can't answer while working</h3>
+        <p data-vi>Khách gọi lúc bạn đang làm tóc — không bắt được, khách gọi tiệm khác.</p>
+        <p data-en>Customer calls while you're doing hair — miss it, they call a competitor.</p>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">😴</div>
+        <h3 data-vi>Không nhận lịch ngoài giờ</h3>
+        <h3 data-en>No bookings after hours</h3>
+        <p data-vi>Khách muốn đặt lúc 11 giờ đêm — tiệm đã đóng, họ quên mất sáng hôm sau.</p>
+        <p data-en>Customers want to book at 11 PM — shop is closed, they forget by morning.</p>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">🗓️</div>
+        <h3 data-vi>Khách quên lịch, slot bỏ trống</h3>
+        <h3 data-en>No-shows waste your slots</h3>
+        <p data-vi>Không có ai nhắc lịch — khách quên, bạn chờ mà không có khách đến.</p>
+        <p data-en>No reminders — customer forgets, you wait with an empty slot.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Solution -->
+<section>
+  <div class="container">
+    <div class="section-label">
+      <span data-vi>Giải pháp</span><span data-en>The Solution</span>
+    </div>
+    <h2 class="section-title" data-vi>BizAgent làm thay bạn 24/7</h2>
+    <h2 class="section-title" data-en>BizAgent handles it for you 24/7</h2>
+    <p class="section-sub" data-vi>Một trợ lý AI hiểu tiếng Việt, biết dịch vụ của tiệm bạn, tự nhận và xác nhận lịch.</p>
+    <p class="section-sub" data-en>An AI assistant that knows your services and automatically handles bookings.</p>
+    <div class="solution-grid">
+      <div class="solution-card">
+        <div class="icon">🤖</div>
+        <h3 data-vi>Chat tự nhiên bằng tiếng Việt</h3>
+        <h3 data-en>Natural conversation in Vietnamese</h3>
+        <p data-vi>Khách chat như nhắn tin với người thật — hỏi giá, xem lịch, đặt ngay.</p>
+        <p data-en>Customers chat naturally — ask prices, check availability, book instantly.</p>
+      </div>
+      <div class="solution-card">
+        <div class="icon">📅</div>
+        <h3 data-vi>Kiểm tra lịch trống tự động</h3>
+        <h3 data-en>Real-time availability check</h3>
+        <p data-vi>Agent tự biết slot nào còn trống, không bao giờ đặt trùng lịch.</p>
+        <p data-en>Agent knows which slots are open, never double-books.</p>
+      </div>
+      <div class="solution-card">
+        <div class="icon">📊</div>
+        <h3 data-vi>Dashboard quản lý đơn giản</h3>
+        <h3 data-en>Simple management dashboard</h3>
+        <p data-vi>Xem tất cả lịch hẹn, xác nhận hoặc hủy bằng 1 click.</p>
+        <p data-en>See all appointments, confirm or cancel with one click.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="how">
+  <div class="container">
+    <div class="section-label">
+      <span data-vi>Cách hoạt động</span><span data-en>How it works</span>
+    </div>
+    <h2 class="section-title" data-vi>Bắt đầu trong 3 bước</h2>
+    <h2 class="section-title" data-en>Get started in 3 steps</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3 data-vi>Điền thông tin tiệm</h3>
+        <h3 data-en>Enter your shop info</h3>
+        <p data-vi>Tên tiệm, dịch vụ, giá, giờ mở cửa — mất 2 phút.</p>
+        <p data-en>Shop name, services, prices, hours — takes 2 minutes.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3 data-vi>Nhận link chat của tiệm</h3>
+        <h3 data-en>Get your chat link</h3>
+        <p data-vi>Hệ thống tạo trợ lý AI riêng cho tiệm bạn ngay lập tức.</p>
+        <p data-en>System instantly creates an AI agent just for your shop.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3 data-vi>Share cho khách hàng</h3>
+        <h3 data-en>Share with customers</h3>
+        <p data-vi>Đăng link lên Facebook, Zalo, in QR code — khách đặt lịch tự động.</p>
+        <p data-en>Post the link on Facebook, Zalo, print a QR code — done.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Demo -->
+<section>
+  <div class="container">
+    <div class="demo-box">
+      <h2 data-vi>🤖 Thử demo ngay</h2>
+      <h2 data-en>🤖 Try the live demo</h2>
+      <p data-vi>Chat với Mai — trợ lý AI của Salon Mai. Thử đặt lịch, hỏi giá, xem lịch trống.</p>
+      <p data-en>Chat with Mai — the AI agent of Salon Mai. Try booking, asking prices, checking availability.</p>
+      <a href="/chat/salon-mai" target="_blank" class="btn-demo">
+        <span data-vi>💬 Chat với Mai ngay →</span>
+        <span data-en>💬 Chat with Mai now →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section>
+  <div class="container" style="text-align:center">
+    <div class="section-label">
+      <span data-vi>Bảng giá</span><span data-en>Pricing</span>
+    </div>
+    <h2 class="section-title" data-vi>Đơn giản, minh bạch</h2>
+    <h2 class="section-title" data-en>Simple, transparent</h2>
+    <p class="section-sub" style="margin: 0 auto 48px" data-vi>Dùng thử miễn phí 30 ngày, không cần thẻ tín dụng.</p>
+    <p class="section-sub" style="margin: 0 auto 48px" data-en>Free trial for 30 days, no credit card required.</p>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <h3 data-vi>Miễn phí</h3>
+        <h3 data-en>Free</h3>
+        <div class="price">0₫ <span data-vi>/tháng</span><span data-en>/month</span></div>
+        <ul class="pricing-features">
+          <li>✓ <span data-vi>1 trợ lý AI</span><span data-en>1 AI agent</span></li>
+          <li>✓ <span data-vi>50 lịch hẹn/tháng</span><span data-en>50 bookings/month</span></li>
+          <li>✓ <span data-vi>Web chat</span><span data-en>Web chat</span></li>
+          <li>✓ <span data-vi>Dashboard cơ bản</span><span data-en>Basic dashboard</span></li>
+        </ul>
+        <a href="/onboarding" class="btn-plan">
+          <span data-vi>Bắt đầu miễn phí</span>
+          <span data-en>Start free</span>
+        </a>
+      </div>
+      <div class="pricing-card featured">
+        <div class="featured-badge">
+          <span data-vi>Phổ biến nhất</span>
+          <span data-en>Most popular</span>
+        </div>
+        <h3 data-vi>Pro</h3>
+        <h3 data-en>Pro</h3>
+        <div class="price">299k <span data-vi>/tháng</span><span data-en>/month</span></div>
+        <ul class="pricing-features">
+          <li>✓ <span data-vi>Không giới hạn lịch hẹn</span><span data-en>Unlimited bookings</span></li>
+          <li>✓ <span data-vi>Telegram Bot</span><span data-en>Telegram Bot</span></li>
+          <li>✓ <span data-vi>Nhắc lịch tự động</span><span data-en>Auto reminders</span></li>
+          <li>✓ <span data-vi>Hỗ trợ ưu tiên</span><span data-en>Priority support</span></li>
+        </ul>
+        <a href="/onboarding" class="btn-plan featured-btn">
+          <span data-vi>Dùng thử 30 ngày</span>
+          <span data-en>Try free 30 days</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="final-cta">
+  <div class="container">
+    <h2 data-vi>Sẵn sàng để khách tự đặt lịch?</h2>
+    <h2 data-en>Ready to let customers book themselves?</h2>
+    <p data-vi>Tạo trợ lý AI cho tiệm của bạn trong 2 phút — hoàn toàn miễn phí.</p>
+    <p data-en>Create your AI agent in 2 minutes — completely free.</p>
+    <a href="/onboarding" class="btn-primary">
+      <span data-vi>🚀 Bắt đầu ngay</span>
+      <span data-en>🚀 Get started now</span>
+    </a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <p>© 2025 BizAgent &nbsp;·&nbsp;
+    <span data-vi>Build với ❤️ bằng Python, FastAPI, Azure AI Foundry</span>
+    <span data-en>Built with ❤️ using Python, FastAPI, Azure AI Foundry</span>
+  </p>
+</footer>
+
+<script>
+  function setLang(lang) {
+    document.body.className = lang === 'en' ? 'en' : '';
+    document.getElementById('btnVi').className = 'lang-btn' + (lang === 'vi' ? ' active' : '');
+    document.getElementById('btnEn').className = 'lang-btn' + (lang === 'en' ? ' active' : '');
+    localStorage.setItem('lang', lang);
+  }
+
+  // Restore language preference
+  const saved = localStorage.getItem('lang');
+  if (saved) setLang(saved);
+</script>
+</body>
+</html>

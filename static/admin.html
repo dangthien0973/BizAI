@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BizAgent — Quản lý lịch</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f6fa;
+      color: #1a1a1a;
+    }
+
+    /* Navbar */
+    .navbar {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .navbar-brand { font-size: 18px; font-weight: 700; }
+    .navbar-right { font-size: 13px; opacity: 0.85; }
+
+    /* Main */
+    .main { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+    /* Stats row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .stat-card .label {
+      font-size: 12px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      margin-top: 6px;
+      color: #667eea;
+    }
+
+    .stat-card .sub {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 2px;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .toolbar h2 { font-size: 16px; font-weight: 600; }
+
+    .date-nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .date-nav button {
+      background: white;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      width: 32px; height: 32px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .date-nav button:hover { border-color: #667eea; color: #667eea; }
+
+    #dateDisplay {
+      font-size: 14px;
+      font-weight: 500;
+      min-width: 140px;
+      text-align: center;
+    }
+
+    /* Booking list */
+    .booking-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .booking-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      display: grid;
+      grid-template-columns: 80px 1fr auto;
+      gap: 16px;
+      align-items: center;
+      border-left: 4px solid #e0e0e0;
+      transition: box-shadow 0.2s;
+    }
+
+    .booking-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .booking-card.confirmed { border-left-color: #4ade80; }
+    .booking-card.pending   { border-left-color: #fbbf24; }
+    .booking-card.cancelled { border-left-color: #f87171; opacity: 0.6; }
+    .booking-card.completed { border-left-color: #a78bfa; }
+
+    .time-block { text-align: center; }
+    .time-block .time { font-size: 18px; font-weight: 700; color: #667eea; }
+    .time-block .duration { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+    .info-block .name { font-size: 15px; font-weight: 600; }
+    .info-block .phone { font-size: 13px; color: #666; margin-top: 2px; }
+    .info-block .service { font-size: 12px; color: #888; margin-top: 4px; }
+
+    .action-block { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .status-badge.pending   { background: #fef3c7; color: #d97706; }
+    .status-badge.confirmed { background: #dcfce7; color: #16a34a; }
+    .status-badge.cancelled { background: #fee2e2; color: #dc2626; }
+    .status-badge.completed { background: #ede9fe; color: #7c3aed; }
+
+    .btn-group { display: flex; gap: 6px; }
+
+    .btn-confirm, .btn-cancel, .btn-complete {
+      border: none;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn-confirm  { background: #dcfce7; color: #16a34a; }
+    .btn-cancel   { background: #fee2e2; color: #dc2626; }
+    .btn-complete { background: #ede9fe; color: #7c3aed; }
+
+    .btn-confirm:hover, .btn-cancel:hover, .btn-complete:hover { opacity: 0.75; }
+
+    /* Empty state */
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: #aaa;
+    }
+
+    .empty .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty p { font-size: 14px; }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #aaa;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-brand">🤖 BizAgent Admin</div>
+  <div class="navbar-right" id="tenantName">Đang tải...</div>
+</nav>
+
+<div class="main">
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="label">Hôm nay</div>
+      <div class="value" id="stat-today">—</div>
+      <div class="sub">lịch hẹn</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Chờ xác nhận</div>
+      <div class="value" id="stat-pending">—</div>
+      <div class="sub">cần xử lý</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Đã xác nhận</div>
+      <div class="value" id="stat-confirmed">—</div>
+      <div class="sub">hôm nay</div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <h2>Danh sách lịch hẹn</h2>
+    <div class="date-nav">
+      <button onclick="changeDate(-1)">‹</button>
+      <div id="dateDisplay">Hôm nay</div>
+      <button onclick="changeDate(1)">›</button>
+    </div>
+  </div>
+
+  <!-- Booking list -->
+  <div class="booking-list" id="bookingList">
+    <div class="loading">⏳ Đang tải...</div>
+  </div>
+</div>
+
+<script>
+  // Lấy slug từ URL: /admin/salon-mai → "salon-mai"
+  const slug = window.location.pathname.split('/').pop();
+  const API = `/api/v1/admin/${slug}`;
+
+  let currentDate = new Date();
+  let bookings = [];
+
+  // ── Date helpers ─────────────────────────────────
+  function formatDate(d) {
+    return d.toISOString().split('T')[0]; // YYYY-MM-DD
+  }
+
+  function formatDisplayDate(d) {
+    const today = new Date();
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+
+    if (formatDate(d) === formatDate(today)) return 'Hôm nay';
+    if (formatDate(d) === formatDate(yesterday)) return 'Hôm qua';
+    if (formatDate(d) === formatDate(tomorrow)) return 'Ngày mai';
+
+    return d.toLocaleDateString('vi-VN', {
+      weekday: 'short', day: 'numeric', month: 'numeric'
+    });
+  }
+
+  function formatTime(isoString) {
+    return new Date(isoString).toLocaleTimeString('vi-VN', {
+      hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh'
+    });
+  }
+
+  function changeDate(delta) {
+    currentDate.setDate(currentDate.getDate() + delta);
+    loadBookings();
+  }
+
+  // ── Load bookings ─────────────────────────────────
+  async function loadBookings() {
+    document.getElementById('dateDisplay').textContent = formatDisplayDate(currentDate);
+    document.getElementById('bookingList').innerHTML = '<div class="loading">⏳ Đang tải...</div>';
+
+    try {
+      const res = await fetch(`${API}/bookings?target_date=${formatDate(currentDate)}`);
+      if (!res.ok) throw new Error('API error');
+      bookings = await res.json();
+      renderBookings();
+      updateStats();
+    } catch (e) {
+      document.getElementById('bookingList').innerHTML =
+        '<div class="empty"><div class="icon">⚠️</div><p>Không thể tải dữ liệu</p></div>';
+    }
+  }
+
+  // ── Render ────────────────────────────────────────
+  function renderBookings() {
+    const list = document.getElementById('bookingList');
+
+    if (bookings.length === 0) {
+      list.innerHTML = `
+        <div class="empty">
+          <div class="icon">📅</div>
+          <p>Không có lịch hẹn nào vào ngày này</p>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = bookings.map(b => `
+      <div class="booking-card ${b.status}" id="card-${b.id}">
+        <div class="time-block">
+          <div class="time">${formatTime(b.start_time)}</div>
+          <div class="duration">${b.service.duration_min} phút</div>
+        </div>
+        <div class="info-block">
+          <div class="name">${b.customer_name}</div>
+          <div class="phone">📞 ${b.customer_phone}</div>
+          <div class="service">✂️ ${b.service.name}</div>
+        </div>
+        <div class="action-block">
+          <span class="status-badge ${b.status}">${statusLabel(b.status)}</span>
+          <div class="btn-group">${actionButtons(b)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function statusLabel(status) {
+    const map = {
+      pending: 'Chờ xác nhận',
+      confirmed: 'Đã xác nhận',
+      cancelled: 'Đã hủy',
+      completed: 'Hoàn thành',
+    };
+    return map[status] || status;
+  }
+
+  function actionButtons(b) {
+    if (b.status === 'cancelled' || b.status === 'completed') return '';
+    let btns = '';
+    if (b.status === 'pending') {
+      btns += `<button class="btn-confirm" onclick="updateStatus('${b.id}', 'confirmed')">✓ Xác nhận</button>`;
+    }
+    if (b.status === 'confirmed') {
+      btns += `<button class="btn-complete" onclick="updateStatus('${b.id}', 'completed')">✓ Hoàn thành</button>`;
+    }
+    btns += `<button class="btn-cancel" onclick="updateStatus('${b.id}', 'cancelled')">✕ Hủy</button>`;
+    return btns;
+  }
+
+  function updateStats() {
+    document.getElementById('stat-today').textContent = bookings.length;
+    document.getElementById('stat-pending').textContent =
+      bookings.filter(b => b.status === 'pending').length;
+    document.getElementById('stat-confirmed').textContent =
+      bookings.filter(b => b.status === 'confirmed').length;
+  }
+
+  // ── Update status ─────────────────────────────────
+  async function updateStatus(bookingId, newStatus) {
+    try {
+      const res = await fetch(`${API}/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.detail || 'Có lỗi xảy ra');
+        return;
+      }
+
+      const updated = await res.json();
+
+      // Cập nhật local data và re-render — không cần reload trang
+      bookings = bookings.map(b => b.id === bookingId ? updated : b);
+      renderBookings();
+      updateStats();
+
+    } catch (e) {
+      alert('Không thể kết nối server');
+    }
+  }
+
+  // ── Init ─────────────────────────────────────────
+  // Lấy tên tiệm từ API tenants
+  async function loadTenantName() {
+    try {
+      const res = await fetch(`/api/v1/tenants/${slug}`);
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('tenantName').textContent = `📍 ${data.name}`;
+        document.title = `${data.name} — Admin`;
+      }
+    } catch {}
+  }
+
+  loadTenantName();
+  loadBookings();
+</script>
+</body>
+</html>
