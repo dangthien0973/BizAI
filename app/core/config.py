@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     azure_ai_project_endpoint: str = ""
     azure_ai_key: str = ""
     azure_ai_model: str = "gpt-4o-mini"
+    azure_embedding_deployment: str = ""
+    azure_openai_endpoint: str = ""
 
     class Config:
         env_file = ".env"

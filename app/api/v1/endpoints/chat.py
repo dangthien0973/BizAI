@@ -6,7 +6,6 @@ from pydantic import BaseModel
 
 from app.db.session import get_db
 from app.models.tenant import Tenant
-from app.agents.agent_factory import get_or_create_agent
 from app.agents.thread_manager import get_or_create_thread, send_message
 from app.tools.booking_tools import make_booking_tools
 from app.tools.catalog_tools import make_catalog_tools
@@ -38,25 +37,41 @@ async def chat(req: ChatRequest, db: AsyncSession = Depends(get_db)):
     if not tenant:
         raise HTTPException(status_code=404, detail=f"Tenant '{req.tenant_slug}' not found")
 
-    # Bước 2: tạo tools với tenant_id bên trong (closure)
-    # tools dùng session đồng bộ riêng (SyncSessionLocal) — không dùng
-    # AsyncSession của request vì Azure AgentsClient gọi tool function
-    # đồng bộ, không await
+    # Bước 2: tạo tools
     get_slots, book = make_booking_tools(str(tenant.id))
     get_services = make_catalog_tools(str(tenant.id))
 
-    # Bước 3: lấy agent — truyền tools vào để tạo agent lần đầu
-    agent_id = await get_or_create_agent(tenant, tools=(get_slots, book, get_services))
+    # System prompt cho conversation
+    system_prompt = f"""
+Bạn là {tenant.persona_name}, trợ lý đặt lịch của {tenant.name}.
+{tenant.persona_prompt}
+Quy tắc bắt buộc:
+- Khi khách hỏi dịch vụ hoặc giá: gọi get_services() trước
+- Khi khách muốn xem lịch trống: gọi get_available_slots()
+- Khi khách xác nhận đặt lịch: gọi book_appointment()
+- Luôn hỏi tên và số điện thoại trước khi book
+- Xác nhận lại thông tin với khách trước khi gọi book_appointment()
+- Không bịa thông tin về dịch vụ hay giá
+""".strip()
 
-    # Bước 4: lấy thread cho session này
+    # Bước 3: lấy thread (session)
     thread_id = get_or_create_thread(req.session_id)
 
-    # Bước 5: gửi message và nhận reply
+    # Bước 4: nếu session mới, thêm system prompt
+    from app.agents.thread_manager import _conversations
+    session_key = f"{req.tenant_slug}:{req.session_id}"
+    if session_key not in _conversations:
+        _conversations[session_key] = [
+            {"role": "system", "content": system_prompt}
+        ]
+
+    # Bước 5: gửi message
     reply = await send_message(
-        agent_id=agent_id,
-        thread_id=thread_id,
+        agent_id="",  # không dùng agent_id nữa
+        thread_id=session_key,
         user_message=req.message,
         tools_context={"tenant_id": str(tenant.id)},
+        tool_functions=(get_slots, book, get_services),
     )
 
     return ChatResponse(reply=reply, session_id=req.session_id)
